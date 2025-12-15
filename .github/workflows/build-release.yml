@@ -38,7 +38,7 @@ jobs:
           if [ "$GOOS" = "windows" ]; then BIN_NAME=gocar.exe; fi
           OUT=release/${GOOS}-${GOARCH}/$BIN_NAME
           echo "Building $OUT"
-          env CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \ 
+          env CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
             go build -trimpath -ldflags="-s -w" -o "$OUT" .
           if [ "$GOOS" != "windows" ]; then chmod +x "$OUT"; fi
           pushd release/${GOOS}-${GOARCH}
@@ -63,30 +63,12 @@ jobs:
           path: release
 
       - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
-          release_name: v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
           draft: false
           prerelease: false
+          files: release/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload release assets
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
-        run: |
-          set -e
-          upload_url="${UPLOAD_URL%\{*}"
-          for f in release/**/*.zip; do
-            fname=$(basename "$f")
-            echo "Uploading $fname to $upload_url"
-            curl -s \
-              -X POST \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Content-Type: application/zip" \
-              --data-binary @"$f" \
-              "$upload_url?name=$fname"
-          done
