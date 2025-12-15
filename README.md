@@ -1,20 +1,36 @@
-# gocar
+# gocar, a cargo for Go
 
-一个"类 Cargo"的 Go 项目脚手架与命令行工具，提供简洁的项目初始化和构建体验。
+> 一个"类 Rust Cargo"的 Go 项目脚手架与命令行工具，提供简洁的项目初始化和构建体验。
+
+[![License: MIT](https://img.shields.io/badge/License-MIT.svg)](https://opensource.org/licenses/MIT)
+[![Go](https://img.shields.io/badge/go-1.25+-blue.svg)](https://golang.org)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/uselibrary/gocar)
+
+**[简体中文](README.md)** | **[English](README_en.md)**
 
 ## 安装
 
+### 二进制安装（推荐）
+从release页面下载适合你操作系统的预编译二进制文件，解压后将其移动到你的`$PATH`目录中：
 ```bash
-go install github.com/yourname/gocar@latest
+/usr/local/bin/ # Unix-like systems, 例如 Linux 或 macOS
+C:\Program Files\ # Windows
+```
+对于Unix-like系统，确保二进制文件具有可执行权限（需要root权限）：
+```bash
+chown root:root /usr/local/bin/gocar
+chmod +x /usr/local/bin/gocar
 ```
 
-或从源码构建：
+### 或从源码构建：
 
 ```bash
-git clone https://github.com/yourname/gocar.git
+git clone https://github.com/uselibrary/gocar.git
 cd gocar
-go build -o gocar main.go
+CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o gocar main.go
 sudo mv gocar /usr/local/bin/
+sudo chown root:root /usr/local/bin/gocar
+sudo chmod +x /usr/local/bin/gocar
 ```
 
 ## 快速开始
