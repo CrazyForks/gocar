@@ -224,7 +224,7 @@ import (
 )
 
 func main() {
-    fmt.Println("Hello, gocar! A golang package manager.")
+    fmt.Println("Hello, gocar! A golang project scaffolding tool for <appName>.")
     fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 }
 ```
@@ -258,7 +258,7 @@ import (
 )
 
 func main() {
-    fmt.Println("Hello, gocar! A golang package manager.")
+    fmt.Println("Hello, gocar! A golang project scaffolding tool for <appName>")
     fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 }
 ```
