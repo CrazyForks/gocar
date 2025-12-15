@@ -146,7 +146,7 @@ func createSimpleProject(appName string) error {
 	}
 
 	// Create main.go
-	mainGo := `package main
+	mainGo := fmt.Sprintf(`package main
 
 import (
 	"fmt"
@@ -154,10 +154,10 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello, gocar! A golang package manager.")
+	fmt.Println("Hello, gocar! A golang project scaffolding tool for %s.")
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 }
-`
+`, appName)
 	if err := writeFile(filepath.Join(appName, "main.go"), mainGo); err != nil {
 		return err
 	}
@@ -253,7 +253,7 @@ func createProjectMode(appName string) error {
 	}
 
 	// Create cmd/server/main.go
-	mainGo := `package main
+	mainGo := fmt.Sprintf(`package main
 
 import (
 	"fmt"
@@ -261,10 +261,10 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello, gocar! A golang package manager.")
+	fmt.Println("Hello, gocar! A golang project scaffolding tool for %s.")
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 }
-`
+`, appName)
 	if err := writeFile(filepath.Join(appName, "cmd", "server", "main.go"), mainGo); err != nil {
 		return err
 	}

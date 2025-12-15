@@ -11,6 +11,8 @@ initialization and build workflow.
 
 ## Installation
 
+> git is required for some commands, please ensure it is installed.
+
 ### Binary Installation (Recommended)
 Download the precompiled binary for your operating system from the release page,
 extract it, and move it to your `$PATH` directory:
