@@ -550,9 +550,9 @@ func handleBuild(args []string) {
 
 	// Determine source path based on project mode
 	if projectMode == "project" {
-		buildArgs = append(buildArgs, "./cmd/server/main.go")
+		buildArgs = append(buildArgs, "./cmd/server")
 	} else {
-		buildArgs = append(buildArgs, "./main.go")
+		buildArgs = append(buildArgs, ".")
 	}
 
 	// Ensure output directory exists
