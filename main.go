@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const version = "0.1.2"
+const version = "0.1.3"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -601,12 +601,22 @@ func handleBuild(args []string) {
 	cmd := exec.Command("go", buildArgs...)
 	cmd.Dir = projectRoot
 	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Build failed: %v\n", err)
+	// Capture both stdout and stderr to ensure we display all output
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		// Display all output from the build command
+		if len(output) > 0 {
+			fmt.Print(string(output))
+		}
+		fmt.Printf("\nBuild failed: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Display any output even on success (e.g., warnings)
+	if len(output) > 0 {
+		fmt.Print(string(output))
 	}
 
 	fmt.Printf("Build successful: %s\n", outputPath)
@@ -771,9 +781,16 @@ func runCommandSilent(dir string, name string, args ...string) error {
 func runCommand(dir string, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+
+	// Capture output to display in case of error
+	output, err := cmd.CombinedOutput()
+
+	// Always display output (for progress messages, warnings, etc.)
+	if len(output) > 0 {
+		fmt.Print(string(output))
+	}
+
+	return err
 }
 
 // ==================== ADD COMMAND ====================
