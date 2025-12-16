@@ -10,7 +10,7 @@
 
 ## 安装
 
-> git 是某些命令的前置依赖，请确保已安装。
+> `git` 是某些命令的前置依赖，请确保已安装。
 
 ### 二进制安装（推荐）
 从 [release页面](https://github.com/uselibrary/gocar/releases) 下载适合你操作系统的预编译二进制文件，解压后将其移动到`$PATH`目录中：
@@ -67,6 +67,7 @@ gocar clean
 创建新的 Go 项目:
 - `gocar new <appName>` 创建简洁模式项目（默认）
 - `gocar new <appName> --mode project` 创建项目模式项目
+
 简洁模型的目录结构：
 ```
 <appName>/
@@ -110,11 +111,11 @@ gocar clean
 **`gocar build [--release] [--target <os>/<arch>] [--help]`**
 
 构建可执行文件：
-- `gocar build` -` 构建 Debug 版本（默认）
-- `gocar build --release` - 构建 Release 版本（启用CGO_ENABLED=0，ldflags="-s -w" 和 trimpath）
-- `gocar build --target <os>/<arch>` - 交叉编译到指定平台
-- `gocar build --release --target <os>/<arch>` - 以 Release 模式交叉编译到指定平台
-- `gocar build --help` - 显示帮助信息
+- `gocar build` ` 构建 Debug 版本（默认）
+- `gocar build --release` 构建 Release 版本（启用CGO_ENABLED=0，ldflags="-s -w" 和 trimpath）
+- `gocar build --target <os>/<arch>` 交叉编译到指定平台
+- `gocar build --release --target <os>/<arch>` 以 Release 模式交叉编译到指定平台
+- `gocar build --help` 显示帮助信息
 
 构建行为：
 
@@ -182,7 +183,7 @@ gocar clean
 
 添加、更新依赖：
 - `gocar add <package>` 添加指定依赖
-- `gocar update <package>`  更新指定依赖
+- `gocar update <package>` 更新指定依赖
 - `gocar update` 更新所有依赖
 - `gocar tidy` 整理 `go.mod` 和 `go.sum`
 - `gocar add` 等同于 `go get <package>...` 并更新 `go.mod` 和 `go.sum`

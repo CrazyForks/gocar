@@ -1,35 +1,36 @@
 # gocar, a cargo for Go
 
-> A Rust Cargo-like Go project scaffold and CLI tool that provides a simple project
-initialization and build workflow.
+> A “Rust Cargo–like” scaffolding and CLI tool for Go projects, providing a clean experience for project initialization and building.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT.svg)](https://opensource.org/licenses/MIT)
-[![Go](https://img.shields.io/badge/go-1.25+-blue.svg)](https://golang.org)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/uselibrary/gocar)
+ [![Go](https://img.shields.io/badge/go-1.25+-blue.svg)](https://golang.org)
+ [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/uselibrary/gocar)
 
 **[简体中文](README.md)** | **[English](README_en.md)**
 
 ## Installation
 
-> git is required for some commands, please ensure it is installed.
+> `git` is a prerequisite for some commands. Please make sure it is installed.
 
-### Binary Installation (Recommended)
-Download the precompiled binary for your operating system from the release page,
-extract it, and move it to your `$PATH` directory:
+### Install via binary (recommended)
 
-```bash
-/usr/local/bin/ # Unix-like systems, e.g., Linux or macOS
+Download the prebuilt binary for your OS from the [Releases page](https://github.com/uselibrary/gocar/releases). Extract it and move it into a directory in your `$PATH`:
+
+```
+/usr/local/bin/ # Unix-like systems, e.g. Linux or macOS
 C:\Program Files\ # Windows
 ```
-For Unix-like systems, ensure the binary has executable permissions (requires root):
-```bash
+
+On Unix-like systems, ensure the binary has executable permissions (root required):
+
+```
 chown root:root /usr/local/bin/gocar
 chmod +x /usr/local/bin/gocar
 ```
 
-### Or Build from Source:
+### Or build from source
 
-```bash
+```
 git clone https://github.com/uselibrary/gocar.git
 cd gocar
 CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o gocar main.go
@@ -40,7 +41,7 @@ sudo chmod +x /usr/local/bin/gocar
 
 ## Quick Start
 
-```bash
+```
 # Create a new project (simple mode)
 gocar new myapp
 
@@ -57,160 +58,21 @@ gocar run
 gocar clean
 ```
 
-## Commands
+## Command Reference
 
-### `gocar new <name> [--mode simple|project]`
+### Create a new project
 
-Create a new Go project.
+**`gocar new <appName> [--mode simple|project]`**
 
-Arguments:
-- `<name>` - project name; used as directory name and output binary name
-- `--mode` - project mode, either `simple` (default) or `project`
+Create a new Go project:
 
-Project name rules:
-- Must start with a letter
-- May contain letters, digits, underscores `_`, or hyphens `-`
-- Must not use reserved names: `test`, `main`, `init`, `internal`, `vendor`
+- `gocar new <appName>` creates a simple-mode project (default)
+- `gocar new <appName> --mode project` creates a project-mode project
 
-Examples:
-
-```bash
-# Create a simple mode project (default)
-gocar new myapp
-
-# Create a project mode project
-gocar new myserver --mode project
-```
-
-### `gocar build [--release] [--target <os>/<arch>] [--help]`
-
-Build the current project.
-
-**Options:**
-- `--release` - build in release mode (optimized binary size)
-- `--target <os>/<arch>` - cross-compile for target platform
-- `--help` - show build command help
-
-**Build behavior:**
-
-| Mode | Equivalent command |
-|------|--------------------|
-| Debug (default) | `go build -o bin/<appName> ./main.go` |
-| Release | `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o bin/<appName> ./main.go` |
-| Cross-compile | `GOOS=<os> GOARCH=<arch> go build ...` |
-
-> In project mode the entry point is `./cmd/server/main.go`
-
-**Common target platforms:**
-- `linux/amd64` - Linux 64-bit
-- `linux/arm64` - Linux ARM 64-bit
-- `darwin/amd64` - macOS Intel
-- `darwin/arm64` - macOS Apple Silicon
-- `windows/amd64` - Windows 64-bit
-- `windows/386` - Windows 32-bit
-
-**Examples:**
-
-```bash
-# Debug build
-gocar build
-
-# Release build (smaller binary)
-gocar build --release
-
-# Cross-compile for Linux AMD64
-gocar build --target linux/amd64
-
-# Release mode cross-compile for Windows
-gocar build --release --target windows/amd64
-
-# Show help information
-gocar build --help
-```
-
-### `gocar run [args...]`
-
-Run the current project directly using `go run`.
-
-Examples:
-
-```bash
-# Run the project
-gocar run
-
-# Pass arguments to the application
-gocar run --port 8080
-```
-
-### `gocar clean`
-
-Clean the `bin/` directory build artifacts.
-
-Example:
-
-```bash
-gocar clean
-# Cleaned build artifacts for 'myapp'
-```
-
-### `gocar add <package>...`
-
-Add dependencies to the project.
-
-**Arguments:**
-- `<package>` - package name(s) to add, supports multiple packages
-
-**Examples:**
-```bash
-# Add a single dependency
-gocar add github.com/gin-gonic/gin
-
-# Add multiple dependencies
-gocar add github.com/gin-gonic/gin github.com/spf13/cobra
-```
-
-### `gocar update [package]...`
-
-Update project dependencies.
-
-**Arguments:**
-- `[package]` - optional, specific package(s) to update. If omitted, updates all dependencies
-
-**Examples:**
-```bash
-# Update all dependencies
-gocar update
-
-# Update specific dependencies
-gocar update github.com/gin-gonic/gin
-```
-
-### `gocar tidy`
-
-Tidy up `go.mod` and `go.sum` files, removing unused dependencies.
-
-**Example:**
-```bash
-gocar tidy
-# Successfully tidied go.mod
-```
-
-### `gocar help`
-
-Show help information.
-
-### `gocar version`
-
-Show version information.
-
-## Project Modes
-
-### Simple Mode
-
-Suitable for small projects, scripts, or CLI tools.
+Directory structure for **simple mode**:
 
 ```
-myapp/
+<appName>/
 ├── go.mod
 ├── main.go
 ├── README.md
@@ -219,108 +81,166 @@ myapp/
 └── .git/
 ```
 
-main.go template:
-
-```go
-package main
-
-import (
-	"fmt"
-	"time"
-)
-
-func main() {
-	fmt.Println("Hello, gocar! A golang project scaffolding tool for <appName>")
-	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
-}
-```
-
-### Project Mode
-
-Suitable for larger projects, web services, or microservices and follows a
-standard Go project layout.
+Directory structure for **project mode**:
 
 ```
-myapp/
+<appName>/
 ├── cmd/
 │   └── server/
-│       └── main.go      # application entry
-├── internal/            # private code (not importable by other modules)
-├── pkg/                 # public libraries for external import
-├── test/                # integration tests
-├── bin/                 # build output
+│       └── main.go
+├── internal/
+├── pkg/
+├── test/
+├── bin/
 ├── go.mod
 ├── README.md
 ├── .gitignore
 └── .git/
 ```
 
-`cmd/server/main.go` template:
+> Simple mode is suitable for small projects, scripts, CLI tools, etc. Project mode is suitable for larger projects, web services, microservices, etc., following the standard Go project layout.
 
-```go
+> `<appName>` is the project name, used as the directory name and the output executable name. `--mode` selects the project mode: `simple` (default) or `project`.
+
+> Project name rules:
+>
+> - Must start with a letter
+> - May contain only letters, digits, underscore `_`, or hyphen `-`
+> - Reserved names are not allowed: `test`, `main`, `init`, `internal`, `vendor`
+
+### Build / Compile
+
+**`gocar build [--release] [--target <os>/<arch>] [--help]`**
+
+Build the executable:
+
+- `gocar build` builds a Debug binary (default)
+- `gocar build --release` builds a Release binary (enables `CGO_ENABLED=0`, `ldflags="-s -w"`, and `-trimpath`)
+- `gocar build --target <os>/<arch>` cross-compiles for the specified platform
+- `gocar build --release --target <os>/<arch>` cross-compiles in Release mode for the specified platform
+- `gocar build --help` shows help information
+
+Build behavior:
+
+| Mode               | Equivalent command                                           |
+| ------------------ | ------------------------------------------------------------ |
+| debug (default)    | `go build -o bin/<os>/<arch>/<appName> ./main.go`            |
+| --release          | `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
+| --target           | `GOOS=<os> GOARCH=<arch> go build -o bin/<os>/<arch>/<appName> ./main.go` |
+| --release --target | `CGO_ENABLED=0 GOOS=<os> GOARCH=<arch> go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
+
+Examples:
+
+```
+# Debug build (default)
+gocar build
+
+# Release build (enables CGO_ENABLED=0, ldflags="-s -w" and trimpath)
+gocar build --release
+
+# Cross-compile for a target OS/arch, e.g. Linux AMD64
+gocar build --target linux/amd64
+
+# Release cross-compile for Windows AMD64 (enables CGO_ENABLED=0, ldflags="-s -w" and trimpath)
+gocar build --release --target windows/amd64
+
+# Show help
+gocar build --help
+```
+
+### Common commands
+
+**`gocar run [args...]`**
+
+Run the current project directly (uses `go run`).
+
+Examples:
+
+```
+# Run the project
+gocar run
+
+# Pass arguments to the app
+gocar run --port 8080
+```
+
+**`gocar clean`**
+
+Remove build artifacts in the `bin/` directory.
+
+Example:
+
+```
+gocar clean
+# Cleaned build artifacts for '<appName>'
+```
+
+**`gocar help`**
+
+Show help information.
+
+**`gocar version`**
+
+Show version information.
+
+### Package management
+
+**`gocar add <package>...`**
+
+Add or update dependencies:
+
+- `gocar add <package>` add the specified dependency
+- `gocar update <package>` update the specified dependency
+- `gocar update` update all dependencies
+- `gocar tidy` tidy `go.mod` and `go.sum`
+- `gocar add` is equivalent to `go get <package>...` and updates `go.mod` and `go.sum`
+
+Dependency behavior:
+
+| Command                     | Equivalent                      |
+| --------------------------- | ------------------------------- |
+| `gocar add <package>...`    | `go get <package>...`           |
+| `gocar update [package]...` | `go get -u [package]...`        |
+| `gocar update`              | `go get -u ./... & go mod tidy` |
+| `gocar tidy`                | `go mod tidy`                   |
+
+Examples:
+
+```
+# Add a dependency
+gocar add github.com/gin-gonic/gin
+
+# Update all dependencies
+gocar update
+
+# Update a specific dependency
+gocar update github.com/gin-gonic/gin
+
+# Tidy dependencies
+gocar tidy
+# Successfully tidied go.mod
+```
+
+------
+
+The `main.go` template content for a new project is:
+
+```
 package main
 
 import (
-	"fmt"
-	"time"
+    "fmt"
+    "time"
 )
 
 func main() {
-	fmt.Println("Hello, gocar! A golang project scaffolding tool for <appName>")
-	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+    fmt.Println("Hello, gocar! A golang project scaffolding tool for <appName>.")
+    fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 }
 ```
 
-Directory notes:
-- `cmd/` - application entry points
-- `internal/` - private code (enforced by Go)
-- `pkg/` - public libraries intended for external use
-- `test/` - integration and end-to-end tests
-
-## Features
-
-- ✅ Automatic Git initialization (`git init -b main`) and `.gitignore` generation
-- ✅ Smart project mode detection (simple vs project)
-- ✅ Project name validation following Go conventions
-- ✅ Release optimizations using `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath`
-- ✅ Clean command to remove build artifacts
-- ✅ Cross-platform support
-
-## .gitignore Template
-
-Automatically generated `.gitignore` includes:
-
-```gitignore
-# Binaries
-<appName>
-bin/
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Test binary
-*.test
-
-# Output of go coverage
-*.out
-
-# Dependency directories
-vendor/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-```
+------
 
 ## License
 
 MIT License
-
-
