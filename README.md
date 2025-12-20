@@ -62,11 +62,12 @@ gocar clean
 
 ### 新建项目
 
-**`gocar new <appName> [--mode simple|project]`**
+**`gocar new <appName> [--mode simple|project|<template>]`**
 
 创建新的 Go 项目:
 - `gocar new <appName>` 创建简洁模式项目（默认）
 - `gocar new <appName> --mode project` 创建项目模式项目
+- `gocar new <appName> --mode <template>` 使用全局配置中定义的模板创建项目
 
 简洁模型的目录结构：
 ```
@@ -74,7 +75,6 @@ gocar clean
 ├── go.mod
 ├── main.go
 ├── README.md
-├── .gocar.toml
 ├── bin/
 ├── .gitignore
 └── .git/
@@ -92,10 +92,11 @@ gocar clean
 ├── bin/
 ├── go.mod
 ├── README.md
-├── .gocar.toml
 ├── .gitignore
 └── .git/
-``` 
+```
+
+> 注意：内置模式（simple/project）创建的项目默认不包含 `.gocar.toml`，可通过 `gocar init` 手动生成。使用自定义模板创建的项目会自动包含 `.gocar.toml`。 
 
 > 简洁模型式适用于小型项目、脚本、CLI 工具等；项目模式适用于大型项目、Web 服务、微服务等，遵循 Go 标准项目布局。
 
@@ -226,9 +227,15 @@ gocar tidy
 
 ### 配置文件
 
+gocar 支持两种配置文件：
+- **项目配置** (`.gocar.toml`)：位于项目根目录，配置当前项目的构建、运行和自定义命令
+- **全局配置** (`~/.gocar/config.toml`)：位于用户主目录，定义项目模板和默认设置
+
+#### 项目配置
+
 **`gocar init`**
 
-在当前项目中生成 `.gocar.toml` 配置文件。新建项目时会自动生成，也可以在已有项目中手动初始化。
+在当前项目中生成 `.gocar.toml` 配置文件。配置文件中的设置优先级高于 gocar 的自动检测。
 
 示例：
 ```bash
@@ -281,6 +288,79 @@ test = "go test -v ./..."
 | `[run].entry` | 运行入口路径，留空则使用 `build.entry` |
 | `[run].args` | 默认运行参数 |
 | `[commands]` | 自定义命令映射 |
+
+#### 全局配置与模板
+
+**`gocar config <subcommand>`**
+
+管理全局配置文件 (`~/.gocar/config.toml`)：
+- `gocar config init` 创建全局配置文件（包含示例模板）
+- `gocar config list` 列出所有可用的项目模板
+- `gocar config path` 显示配置文件路径
+- `gocar config edit` 显示配置文件位置供编辑
+
+示例：
+```bash
+# 创建全局配置文件
+gocar config init
+
+# 查看可用模板
+gocar config list
+# Available templates:
+#   api          Web API project with common structure (base: project)
+#   cli          CLI tool project (base: simple)
+#   lib          Go library project (base: simple)
+```
+
+**全局配置文件结构：**
+
+```toml
+# ~/.gocar/config.toml
+
+# 默认设置
+[defaults]
+author = ""        # 默认作者
+license = "MIT"    # 默认许可证
+
+# 项目模板
+# 使用方式: gocar new <name> --mode <template_name>
+
+[templates.api]
+description = "Web API project with common structure"
+mode = "project"  # 基础模式: simple 或 project
+
+# 额外创建的目录
+dirs = [
+    "api",
+    "configs",
+    "scripts",
+]
+
+# 预设的自定义命令
+[templates.api.commands]
+dev = "go run cmd/server/main.go -env=dev"
+lint = "golangci-lint run ./..."
+
+[templates.cli]
+description = "CLI tool project"
+mode = "simple"
+dirs = ["cmd"]
+
+[templates.cli.commands]
+install = "go install ."
+```
+
+**使用模板创建项目：**
+
+```bash
+# 使用 api 模板创建项目
+gocar new myapi --mode api
+
+# 使用 cli 模板创建项目
+gocar new mytool --mode cli
+```
+
+> 注意：使用模板创建的项目会自动包含 `.gocar.toml` 配置文件，其中包含模板中定义的自定义命令。
 
 ### 自定义命令
 

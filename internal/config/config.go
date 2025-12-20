@@ -18,6 +18,7 @@ type GocarConfig struct {
 	Project  ProjectConfig     `toml:"project"`
 	Build    BuildConfig       `toml:"build"`
 	Run      RunConfig         `toml:"run"`
+	Profile  ProfilesConfig    `toml:"profile"`
 	Commands map[string]string `toml:"commands"`
 }
 
@@ -25,6 +26,21 @@ type GocarConfig struct {
 type ProjectConfig struct {
 	Mode string `toml:"mode"` // simple | project
 	Name string `toml:"name"` // 项目名称，为空时使用目录名
+}
+
+// ProfilesConfig 构建配置档案
+type ProfilesConfig struct {
+	Debug   ProfileConfig `toml:"debug"`
+	Release ProfileConfig `toml:"release"`
+}
+
+// ProfileConfig 单个构建档案配置
+type ProfileConfig struct {
+	Ldflags    string `toml:"ldflags"`     // ldflags 参数
+	Gcflags    string `toml:"gcflags"`     // 编译器参数
+	Trimpath   *bool  `toml:"trimpath"`    // 是否移除路径信息
+	CgoEnabled *bool  `toml:"cgo_enabled"` // 是否启用 CGO
+	Race       bool   `toml:"race"`        // 是否启用竞态检测
 }
 
 // BuildConfig 构建配置
@@ -44,6 +60,8 @@ type RunConfig struct {
 
 // DefaultConfig 返回默认配置
 func DefaultConfig() *GocarConfig {
+	trueVal := true
+	falseVal := false
 	return &GocarConfig{
 		Project: ProjectConfig{
 			Mode: "",
@@ -59,6 +77,22 @@ func DefaultConfig() *GocarConfig {
 		Run: RunConfig{
 			Entry: "",
 			Args:  []string{},
+		},
+		Profile: ProfilesConfig{
+			Debug: ProfileConfig{
+				Ldflags:    "",
+				Gcflags:    "",
+				Trimpath:   &falseVal,
+				CgoEnabled: nil, // nil 表示跟随系统默认
+				Race:       false,
+			},
+			Release: ProfileConfig{
+				Ldflags:    "-s -w",
+				Gcflags:    "",
+				Trimpath:   &trueVal,
+				CgoEnabled: &falseVal,
+				Race:       false,
+			},
 		},
 		Commands: map[string]string{
 			"vet":  "go vet ./...",
@@ -96,7 +130,7 @@ entry = "%s"
 # 输出目录
 output = "bin"
 
-# 额外的 ldflags，会追加到默认 ldflags 之后
+# 额外的 ldflags，会追加到 profile 的 ldflags 之后
 # 例如: "-X main.version=1.0.0"
 ldflags = ""
 
@@ -113,6 +147,24 @@ entry = ""
 
 # 默认运行参数
 # args = ["-config", "config.yaml"]
+
+# Debug 构建配置
+# 使用: gocar build (默认)
+[profile.debug]
+# ldflags = ""              # Debug 默认无 ldflags
+# gcflags = "all=-N -l"     # 禁用优化，方便调试
+# trimpath = false          # 保留路径信息
+# cgo_enabled = true        # 跟随系统默认
+# race = false              # 竞态检测 (会显著降低性能)
+
+# Release 构建配置
+# 使用: gocar build --release
+[profile.release]
+ldflags = "-s -w"           # 裁剪符号表和调试信息
+# gcflags = ""              # 编译器参数
+trimpath = true             # 移除编译路径信息
+cgo_enabled = false         # 禁用 CGO 以生成静态二进制
+# race = false              # 竞态检测
 
 # 自定义命令
 # 格式: 命令名 = "要执行的 shell 命令"
@@ -234,4 +286,12 @@ func (c *GocarConfig) RunCustomCommand(projectRoot, name string, extraArgs []str
 // ListCommands 列出所有自定义命令
 func (c *GocarConfig) ListCommands() map[string]string {
 	return c.Commands
+}
+
+// GetProfile 获取指定模式的构建配置
+func (c *GocarConfig) GetProfile(release bool) *ProfileConfig {
+	if release {
+		return &c.Profile.Release
+	}
+	return &c.Profile.Debug
 }

@@ -78,12 +78,18 @@ func (b *Builder) GetRelativeOutputPath() string {
 func (b *Builder) buildCommand(outputPath string) *exec.Cmd {
 	args := []string{"build"}
 
+	// 获取当前模式的 profile 配置
+	var profile *config.ProfileConfig
+	if b.gocarConfig != nil {
+		profile = b.gocarConfig.GetProfile(b.config.Release)
+	}
+
 	// 构建 ldflags
 	ldflags := ""
-	if b.config.Release {
-		ldflags = "-s -w"
+	if profile != nil && profile.Ldflags != "" {
+		ldflags = profile.Ldflags
 	}
-	// 追加配置文件中的 ldflags
+	// 追加配置文件中的额外 ldflags
 	if b.gocarConfig != nil && b.gocarConfig.Build.Ldflags != "" {
 		if ldflags != "" {
 			ldflags += " " + b.gocarConfig.Build.Ldflags
@@ -95,8 +101,19 @@ func (b *Builder) buildCommand(outputPath string) *exec.Cmd {
 		args = append(args, "-ldflags="+ldflags)
 	}
 
-	if b.config.Release {
+	// gcflags
+	if profile != nil && profile.Gcflags != "" {
+		args = append(args, "-gcflags="+profile.Gcflags)
+	}
+
+	// trimpath
+	if profile != nil && profile.Trimpath != nil && *profile.Trimpath {
 		args = append(args, "-trimpath")
+	}
+
+	// race 检测
+	if profile != nil && profile.Race {
+		args = append(args, "-race")
 	}
 
 	// 添加构建标签
@@ -143,11 +160,24 @@ func (b *Builder) buildEnv() []string {
 	env = append(env, fmt.Sprintf("GOOS=%s", b.config.TargetOS))
 	env = append(env, fmt.Sprintf("GOARCH=%s", b.config.TargetArch))
 
+	// 获取当前模式的 profile 配置
+	var profile *config.ProfileConfig
+	if b.gocarConfig != nil {
+		profile = b.gocarConfig.GetProfile(b.config.Release)
+	}
+
+	// 命令行 --with-cgo 优先级最高
 	if b.config.WithCGO {
 		env = append(env, "CGO_ENABLED=1")
-	} else if b.config.Release {
-		env = append(env, "CGO_ENABLED=0")
+	} else if profile != nil && profile.CgoEnabled != nil {
+		// 使用 profile 中的配置
+		if *profile.CgoEnabled {
+			env = append(env, "CGO_ENABLED=1")
+		} else {
+			env = append(env, "CGO_ENABLED=0")
+		}
 	}
+	// 如果都没设置，则使用系统默认（不设置 CGO_ENABLED）
 
 	// 添加配置文件中的额外环境变量
 	if b.gocarConfig != nil && len(b.gocarConfig.Build.ExtraEnv) > 0 {

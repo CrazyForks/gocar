@@ -62,12 +62,13 @@ gocar clean
 
 ### Create a new project
 
-**`gocar new <appName> [--mode simple|project]`**
+**`gocar new <appName> [--mode simple|project|<template>]`**
 
 Create a new Go project:
 
 - `gocar new <appName>` creates a simple-mode project (default)
 - `gocar new <appName> --mode project` creates a project-mode project
+- `gocar new <appName> --mode <template>` creates a project using a template from global config
 
 Directory structure for **simple mode**:
 
@@ -76,7 +77,6 @@ Directory structure for **simple mode**:
 ├── go.mod
 ├── main.go
 ├── README.md
-├── .gocar.toml
 ├── bin/
 ├── .gitignore
 └── .git/
@@ -95,10 +95,11 @@ Directory structure for **project mode**:
 ├── bin/
 ├── go.mod
 ├── README.md
-├── .gocar.toml
 ├── .gitignore
 └── .git/
 ```
+
+> Note: Built-in modes (simple/project) do not include `.gocar.toml` by default. Use `gocar init` to generate it manually. Projects created from custom templates will automatically include `.gocar.toml`.
 
 > Simple mode is suitable for small projects, scripts, CLI tools, etc. Project mode is suitable for larger projects, web services, microservices, etc., following the standard Go project layout.
 
@@ -234,9 +235,15 @@ gocar tidy
 
 ### Configuration File
 
+gocar supports two configuration files:
+- **Project config** (`.gocar.toml`): Located in project root, configures build, run, and custom commands for the current project
+- **Global config** (`~/.gocar/config.toml`): Located in user home directory, defines project templates and default settings
+
+#### Project Configuration
+
 **`gocar init`**
 
-Generate a `.gocar.toml` configuration file in the current project. It is automatically generated when creating a new project, or can be manually initialized in an existing project.
+Generate a `.gocar.toml` configuration file in the current project. Settings in the config file take priority over gocar's auto-detection.
 
 Example:
 ```bash
@@ -289,6 +296,79 @@ test = "go test -v ./..."
 | `[run].entry` | Run entry path, uses `build.entry` if empty |
 | `[run].args` | Default run arguments |
 | `[commands]` | Custom command mappings |
+
+#### Global Configuration & Templates
+
+**`gocar config <subcommand>`**
+
+Manage the global config file (`~/.gocar/config.toml`):
+- `gocar config init` creates the global config file (includes example templates)
+- `gocar config list` lists all available project templates
+- `gocar config path` shows the config file path
+- `gocar config edit` shows config file location for editing
+
+Examples:
+```bash
+# Create global config file
+gocar config init
+
+# View available templates
+gocar config list
+# Available templates:
+#   api          Web API project with common structure (base: project)
+#   cli          CLI tool project (base: simple)
+#   lib          Go library project (base: simple)
+```
+
+**Global config file structure:**
+
+```toml
+# ~/.gocar/config.toml
+
+# Default settings
+[defaults]
+author = ""        # Default author
+license = "MIT"    # Default license
+
+# Project templates
+# Usage: gocar new <name> --mode <template_name>
+
+[templates.api]
+description = "Web API project with common structure"
+mode = "project"  # Base mode: simple or project
+
+# Additional directories to create
+dirs = [
+    "api",
+    "configs",
+    "scripts",
+]
+
+# Preset custom commands
+[templates.api.commands]
+dev = "go run cmd/server/main.go -env=dev"
+lint = "golangci-lint run ./..."
+
+[templates.cli]
+description = "CLI tool project"
+mode = "simple"
+dirs = ["cmd"]
+
+[templates.cli.commands]
+install = "go install ."
+```
+
+**Create projects using templates:**
+
+```bash
+# Create project using api template
+gocar new myapi --mode api
+
+# Create project using cli template
+gocar new mytool --mode cli
+```
+
+> Note: Projects created from templates will automatically include a `.gocar.toml` config file with the custom commands defined in the template.
 
 ### Custom Commands
 
