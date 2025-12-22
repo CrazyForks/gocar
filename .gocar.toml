@@ -64,7 +64,7 @@ cgo_enabled = false         # 禁用 CGO 以生成静态二进制
 # 命令会在项目根目录下执行
 [commands]
 # 代码检查
-check = "go vet ./..."
+vet = "go vet ./..."
 
 # 代码格式化
 fmt = "go fmt ./..."
