@@ -3,10 +3,6 @@
 
 # 项目配置
 [project]
-# 项目模式: "simple" (单文件) 或 "project" (标准目录结构)
-# 留空则自动检测
-mode = "project"
-
 # 项目名称，留空则使用目录名
 name = "gocar"
 
@@ -16,8 +12,8 @@ version = "0.2.1"
 # 构建配置
 [build]
 # 构建入口路径 (相对于项目根目录)
-# simple 模式默认为 ".", project 模式默认为 "cmd/<appName>"（即项目名）
-entry = "cmd/server"
+# standard 布局默认为 "cmd/<appName>"
+entry = "cmd/gocar"
 
 # 输出目录
 output = "bin"
@@ -58,19 +54,25 @@ trimpath = true             # 移除编译路径信息
 cgo_enabled = false         # 禁用 CGO 以生成静态二进制
 # race = false              # 竞态检测
 
+# 自定义构建配置
+# 使用: gocar build --profile ci
+# [profile.ci]
+# trimpath = true
+# race = true
+
 # 自定义命令
 # 格式: 命令名 = "要执行的 shell 命令"
 # 使用: gocar <命令名>
 # 命令会在项目根目录下执行
+#
+# 自定义命令可以覆盖以下内置命令: build, run, clean, add, update, tidy, test, check, commands, doctor
+# 保护命令 (new, init) 不可被覆盖
 [commands]
 # 代码检查
 vet = "go vet ./..."
 
 # 代码格式化
 fmt = "go fmt ./..."
-
-# 运行测试
-test = "go test -v ./..."
 
 # lint = "golangci-lint run"
 clippy = "/home/imes/go/bin/golangci-lint run"

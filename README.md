@@ -29,7 +29,7 @@ chmod +x /usr/local/bin/gocar
 ```bash
 git clone https://github.com/uselibrary/gocar.git
 cd gocar
-CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o gocar main.go
+CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o gocar ./cmd/gocar
 sudo mv gocar /usr/local/bin/
 sudo chown root:root /usr/local/bin/gocar
 sudo chmod +x /usr/local/bin/gocar
@@ -40,7 +40,7 @@ sudo chmod +x /usr/local/bin/gocar
 ## 快速开始
 
 ```bash
-# 创建新项目（简洁模式）
+# 创建标准 Go 应用
 gocar new myapp
 
 # 进入项目目录
@@ -52,6 +52,9 @@ gocar build
 # 运行项目
 gocar run
 
+# 检查项目
+gocar check
+
 # 清理构建产物
 gocar clean
 ```
@@ -62,33 +65,16 @@ gocar clean
 
 ### 新建项目
 
-**`gocar new <appName> [--mode simple|project]`**
+**`gocar new <appName>`**
 
-创建新的 Go 项目:
-- `gocar new <appName>` 创建简洁模式项目（默认）
-- `gocar new <appName> --mode project` 创建项目模式项目
+创建一个标准 Go 应用。`gocar new myapp` 不需要选择模板，会直接生成适合多数应用的默认结构：
 
-简洁模型的目录结构：
-```
-<appName>/
-├── go.mod
-├── main.go
-├── README.md
-├── bin/
-├── .gitignore
-└── .git/
-``` 
-
-项目模式的目录结构：
 ```
 <appName>/
 ├── cmd/
-│   └── server/
+│   └── <appName>/
 │       └── main.go
 ├── internal/
-├── pkg/
-├── test/
-├── bin/
 ├── go.mod
 ├── README.md
 ├── .gitignore
@@ -97,9 +83,7 @@ gocar clean
 
 > 注意：创建的项目默认不包含 `.gocar.toml`，可通过 `gocar init` 手动生成。
 
-> 简洁模型式适用于小型项目、脚本、CLI 工具等；项目模式适用于大型项目、Web 服务、微服务等，遵循 Go 标准项目布局。
-
-> `<appName>`为项目名称，同时作为目录名和输出的可执行文件名；`--mode`为项目模式，可选 `simple`（默认）或 `project`
+> `<appName>` 为项目名称，同时作为目录名、模块名和输出的可执行文件名。构建产物目录 `bin/` 会在首次 `gocar build` 时自动创建。
 
 > 项目名规则：
 > - 必须以字母开头
@@ -115,6 +99,7 @@ gocar clean
 构建可执行文件：
 - `gocar build` ` 构建 Debug 版本（默认）
 - `gocar build --release` 构建 Release 版本（启用CGO_ENABLED=0，ldflags="-s -w" 和 trimpath）
+- `gocar build --profile <name>` 使用 `.gocar.toml` 中的 `[profile.<name>]` 构建
 - `gocar build --target <os>/<arch>` 交叉编译到指定平台
 - `gocar build --release --target <os>/<arch>` 以 Release 模式交叉编译到指定平台
 - `gocar build --with-cgo` 强制启用 CGO（设置 CGO_ENABLED=1）
@@ -124,12 +109,12 @@ gocar clean
 
 | 模式 | 命令等价 |
 |------|----------|
-| debug（默认） | `go build -o bin/<os>/<arch>/<appName> ./main.go` |
-| -- release | `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
-| -- target| `GOOS=<os> GOARCH=<arch> go build -o bin/<os>/<arch>/<appName> ./main.go` |
-| -- release -- target | `CGO_ENABLED=0 GOOS=<os> GOARCH=<arch> go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
-| -- with-cgo | `CGO_ENABLED=1 go build -o bin/<os>/<arch>/<appName> ./main.go` |
-| -- release -- with-cgo | `CGO_ENABLED=1 go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
+| debug（默认） | `go build -o bin/debug/<os>-<arch>/<appName> <entry>` |
+| -- release | `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o bin/release/<os>-<arch>/<appName> <entry>` |
+| -- target| `GOOS=<os> GOARCH=<arch> go build -o bin/debug/<os>-<arch>/<appName> <entry>` |
+| -- release -- target | `CGO_ENABLED=0 GOOS=<os> GOARCH=<arch> go build -ldflags="-s -w" -trimpath -o bin/release/<os>-<arch>/<appName> <entry>` |
+| -- with-cgo | `CGO_ENABLED=1 go build -o bin/debug/<os>-<arch>/<appName> <entry>` |
+| -- release -- with-cgo | `CGO_ENABLED=1 go build -ldflags="-s -w" -trimpath -o bin/release/<os>-<arch>/<appName> <entry>` |
 
 示例：
 ```bash
@@ -138,6 +123,9 @@ gocar build
 
 # Release 构建（启用CGO_ENABLED=0，ldflags="-s -w" 和 trimpath）
 gocar build --release
+
+# 使用自定义 profile 构建
+gocar build --profile ci
 
 # 交叉编译到指定系统和架构，例如 Linux AMD64
 gocar build --target linux/amd64
@@ -179,6 +167,45 @@ gocar run --port 8080
 gocar clean
 # Cleaned build artifacts for '<appName>'
 ```
+
+**`gocar test [OPTIONS] [packages...]`**
+
+运行项目测试，默认等价于 `go test ./...`。
+
+常用选项：
+- `--coverage` 启用覆盖率统计（`go test -cover`）
+- `--race` 启用竞态检测
+- `--bench <pattern>` 运行基准测试
+- 未识别的测试参数会继续传给 `go test`，也可以使用 `--` 显式分隔
+
+示例：
+```bash
+gocar test
+gocar test ./internal/...
+gocar test --coverage
+gocar test --bench .
+gocar test -run TestConfig
+gocar test -- -run TestConfig
+```
+
+**`gocar check [--no-test] [--race]`**
+
+运行项目检查，默认依次执行 `go fmt ./...`、`go vet ./...`、`go test ./...`。
+
+示例：
+```bash
+gocar check
+gocar check --race
+gocar check --no-test
+```
+
+**`gocar commands`**
+
+列出内置命令和 `.gocar.toml` 中定义的自定义命令。
+
+**`gocar doctor`**
+
+检查 Go/Git、项目检测和 `.gocar.toml` 配置合法性。
 
 **`gocar help`**
 
@@ -244,10 +271,6 @@ gocar init
 
 # 项目配置
 [project]
-# 项目模式: "simple" (单文件) 或 "project" (标准目录结构)
-# 留空则自动检测
-mode = ""
-
 # 项目名称，留空则使用目录名
 name = ""
 
@@ -257,8 +280,8 @@ name = ""
 # 构建配置
 [build]
 # 构建入口路径 (相对于项目根目录)
-# simple 模式默认为 ".", project 模式默认为 "cmd/<appName>"（即项目名）
-entry = "."
+# standard 布局默认为 "cmd/<appName>"
+entry = "cmd/myapp"
 
 # 输出目录
 output = "bin"
@@ -299,6 +322,12 @@ trimpath = true             # 移除编译路径信息
 cgo_enabled = false         # 禁用 CGO 以生成静态二进制
 # race = false              # 竞态检测
 
+# 自定义构建配置
+# 使用: gocar build --profile ci
+# [profile.ci]
+# trimpath = true
+# race = true
+
 # 自定义命令
 # 格式: 命令名 = "要执行的 shell 命令"
 # 使用: gocar <命令名>
@@ -310,9 +339,6 @@ vet = "go vet ./..."
 # 代码格式化
 fmt = "go fmt ./..."
 
-# 运行测试
-test = "go test -v ./..."
-
 # lint = "golangci-lint run"
 # doc = "godoc -http=:6060"
 # proto = "protoc --go_out=. --go-grpc_out=. ./proto/*.proto"
@@ -322,7 +348,6 @@ test = "go test -v ./..."
 
 | 配置项 | 说明 |
 |--------|------|
-| `[project].mode` | 指定项目模式 (`simple` 或 `project`)，留空则自动检测 |
 | `[project].name` | 自定义项目名称，留空则使用目录名 |
 | `[project].version` | **项目版本号**，构建时自动通过 `-X main.version=<version>` 注入到程序中 |
 | `[build].entry` | **自定义构建入口路径**，如 `cmd/myapp` 替代默认的 `cmd/<appName>`（即项目名） |
@@ -347,7 +372,7 @@ test = "go test -v ./..."
 
 ### 自定义命令
 
-在 `.gocar.toml` 的 `[commands]` 部分定义命令后，可以直接执行：
+在 `.gocar.toml` 的 `[commands]` 部分定义命令后，可以直接执行。`test` 和 `check` 已是内置命令，通常不需要再自定义：
 
 ```bash
 # 代码检查
@@ -356,11 +381,8 @@ gocar vet
 # 代码格式化
 gocar fmt
 
-# 运行测试
-gocar test
-
-# 传递额外参数
-gocar test -run TestXxx
+# 自定义 lint
+gocar lint
 ```
 
 命令输出会实时显示到终端。您可以自定义任意命令，例如：
@@ -380,7 +402,7 @@ dev = "air"  # 热重载
 | 命令类型 | 命令 | 可被覆盖 |
 |---------|------|----------|
 | 保护命令 | `new`, `init` | ❌ 不可覆盖 |
-| 项目命令 | `build`, `run`, `clean`, `add`, `update`, `tidy` | ✅ 可覆盖 |
+| 项目命令 | `build`, `run`, `clean`, `add`, `update`, `tidy`, `test`, `check`, `commands`, `doctor` | ✅ 可覆盖 |
 
 > **保护命令**（`new`、`init`）不能被覆盖，因为 `new` 在项目创建前执行（此时还没有配置文件），`init` 用于生成配置文件本身。
 

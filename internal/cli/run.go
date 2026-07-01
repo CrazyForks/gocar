@@ -16,7 +16,7 @@ type RunCommand struct{}
 // Run 执行 run 命令
 func (c *RunCommand) Run(args []string) error {
 	// Get project info
-	projectRoot, appName, projectMode, err := project.DetectProject()
+	projectRoot, appName, _, err := project.DetectProject()
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -28,14 +28,10 @@ func (c *RunCommand) Run(args []string) error {
 		cfg = config.DefaultConfig()
 	}
 
-	// Apply config overrides
-	if cfg.Project.Mode != "" {
-		projectMode = cfg.Project.Mode
-	}
 	appName = cfg.GetProjectName(appName)
 
 	// Get entry from config
-	sourcePath := cfg.GetRunEntry(projectMode)
+	sourcePath := cfg.GetRunEntryForApp(appName)
 	if sourcePath != "." && !filepath.IsAbs(sourcePath) && len(sourcePath) > 0 && sourcePath[0] != '.' {
 		sourcePath = "./" + sourcePath
 	}

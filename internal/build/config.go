@@ -5,6 +5,7 @@ import "runtime"
 // Config 构建配置
 type Config struct {
 	Release    bool   // 是否为发布模式
+	Profile    string // 构建 profile 名称
 	TargetOS   string // 目标操作系统
 	TargetArch string // 目标架构
 	WithCGO    bool   // 是否启用 CGO
@@ -14,6 +15,7 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		Release:    false,
+		Profile:    "debug",
 		TargetOS:   runtime.GOOS,
 		TargetArch: runtime.GOARCH,
 		WithCGO:    false,
@@ -33,6 +35,9 @@ func (c *Config) IsCurrentPlatform() bool {
 
 // BuildMode 返回构建模式字符串
 func (c *Config) BuildMode() string {
+	if c.Profile != "" {
+		return c.Profile
+	}
 	if c.Release {
 		return "release"
 	}

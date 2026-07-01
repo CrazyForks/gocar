@@ -1,136 +1,44 @@
-# gocar 功能测试与潜在 Bug 检查清单
+# gocar Review Checklist
 
-本文件列出基于当前代码与 README 的每个主要功能的手动/自动测试方法，以及应检查的潜在问题点（Bug 风险）。建议把这些步骤逐步写成自动化集成测试与单元测试。
+## 新建项目
 
-**新建项目（`gocar new`）**
-- **测试步骤**: 1) 在临时目录执行 `gocar new myapp`；2) `gocar new myapp --mode project`；3) 检查生成文件/目录是否存在（`go.mod`、`main.go` 或 `cmd/<appName>/main.go`、`.gocar.toml`、`.gitignore`、`bin/`、`.git/`）。
-- **预期结果**: 生成的目录结构与 README 描述一致，`go build` 在生成目录中成功通过（在 simple 模式对 `main.go` 执行 `go build`）。
-- **潜在问题**: 项目名校验不严导致非法目录名；当目标目录已存在时覆盖或失败未提示；模板占位符未正确替换；缺少 `git` 时行为不一致；文件权限/所有者设置错误。
+- `gocar new myapp` 应生成：
 
-**构建（`gocar build`）**
-- **测试步骤**: 1) `gocar build`（默认 debug）；2) `gocar build --release`；3) `gocar build --target linux/amd64`（或其他组合）；4) `gocar build --with-cgo`；5) 检查输出路径 `bin/<os>/<arch>/<appName>` 是否存在且可执行（用 `file` 或运行检查）。
-- **预期结果**: 生成对应目标平台的二进制；`--release` 打包后体积明显变小并带有 `-s -w` 的优化；`--with-cgo` 时 `CGO_ENABLED=1` 生效。
-- **潜在问题**: 未正确解析 `build.entry`（错误入口路径导致找不到 main）；交叉编译时缺少 C 交叉工具链导致链接失败；对 `ldflags` 的追加/覆盖顺序错误；路径拼接导致目录注入或错误输出位置；并发构建时目录竞争。
-
-**运行（`gocar run`）**
-- **测试步骤**: 1) `gocar run`（在有 main 的项目）；2) 传入参数 `gocar run -- --port 8080`，检查程序是否收到参数；3) 使用 `gocar run` 在不同 `run.entry` 配置下运行。
-- **预期结果**: 进程启动并输出日志，传递的参数和环境变量被正确传递。
-- **潜在问题**: 参数解析/分隔错误（`--` 处理不当）；未将子进程的退出码或信号向上报出；运行入口回退逻辑（空 `run.entry` 使用 `build.entry`）有 bug；工作目录、环境变量未正确传递。
-
-**清理（`gocar clean`）**
-- **测试步骤**: 1) 先构建产生 `bin/` 内容；2) `gocar clean`；3) 验证 `bin/` 下构建产物被删除或按预期清理。
-- **预期结果**: 仅删除构建产物，不影响源码与用户配置文件。
-- **潜在问题**: 清理命令存在路径错误导致误删非构建文件；在无权限时失败但未给出清晰提示；跨平台路径分隔问题。
-
-**初始化配置（`gocar init`）**
-- **测试步骤**: 1) 在无 `.gocar.toml` 的空项目中运行 `gocar init`；2) 在已有 `.gocar.toml` 的项目中运行，确认不会无提示覆盖（或有覆盖确认）。
-- **预期结果**: 生成语法正确的 `.gocar.toml`，包含合理默认值。
-- **潜在问题**: 覆盖已有配置文件而不提示；生成的 TOML 字段不完整或默认值错误；TOML 的键名/类型与代码期望不一致。
-
-**依赖管理（`gocar add` / `gocar update` / `gocar tidy`）**
-- **测试步骤**: 1) 在临时模块中运行 `gocar add github.com/gin-gonic/gin`，观察 `go.mod`、`go.sum` 变化；2) `gocar update`（带参数/不带参数）；3) `gocar tidy` 后确认 `go.mod` 精简。
-- **预期结果**: 等价于 `go get` / `go get -u` / `go mod tidy` 的行为，网络或代理问题会被报错并可复现。
-- **潜在问题**: 未正确处理 `@version` 语法；在无网络或代理阻塞时未提示解决方案；并发修改 `go.mod` 导致冲突；go 版本兼容性问题。
-
-**自定义命令（`.gocar.toml` 的 `[commands]`）**
-- **测试步骤**: 1) 在 `.gocar.toml` 添加 `vet = "go vet ./..."`；2) 运行 `gocar vet` 并对比直接执行命令的输出和退出码；3) 测试带参数及长命令、管道命令的行为。
-- **预期结果**: 自定义命令在 shell 中正确展开并返回原始命令的退出码与输出。
-- **潜在问题**: 命令字符串未通过安全的 shell 方式执行导致参数注入；复杂命令（含管道/重定向）处理不当；信号/终止传递不完整；无法捕获交互式命令的输入。
-
-**帮助与版本（`gocar help` / `gocar version`）**
-- **测试步骤**: 运行 `gocar help`、`gocar version`，检查输出内容的完整性与可读性。
-- **潜在问题**: `version` 字段未在构建时注入（ldflags 未生效）；help 文档与实际命令不一致或参数遗漏。
-
-**跨平台与目标（`--target`、GOOS/GOARCH）**
-- **测试步骤**: 使用 `gocar build --target darwin/amd64`、`linux/amd64` 等，使用 `file` 命令或在目标平台上运行二进制（若可用）验证平台标签。
-- **潜在问题**: 支持的目标组合未校验（例如 musl/arm 等）；交叉编译依赖系统工具链，未提示缺少依赖；路径或扩展名（Windows `.exe`）处理有误。
-
-**内部工具与公用函数（`internal/*`, `util/*`）**
-- **测试步骤**: 为 `util.file`、`util.exec`、`project.validator` 等编写单元测试，覆盖边界条件：长路径、符号链接、权限受限、非法项目名、空输入。
-- **预期结果**: 所有工具函数在异常输入下返回可预测的错误而非 panic。
-- **潜在问题**: 正则校验（如项目名）漏掉合法 / 拒绝合法字符；路径拼接在 Windows/Unix 上差异导致错误；并发访问文件时竞态条件。
-
-**安全、权限与 UX 检查**
-- **测试步骤**: 在普通用户/非 root 情况下执行涉及 `chown`/`chmod` 的安装或移动操作；检查错误消息是否清晰；模拟磁盘空间不足或只读文件系统。
-- **潜在问题**: 要求 sudo 而未说明；在权限不足时尝试写入导致未回滚的半成品；敏感操作没有确认提示。
-
-**建议的自动化测试策略**
-- **单元测试**: 为 `util`、`project`、`config`、`validator` 提供覆盖关键分支的单元测试（使用 table-driven tests）。
-- **集成测试**: 使用 `os/exec` 在临时目录运行 `gocar` 二进制（或 `go run main.go`）进行 e2e 测试，校验生成文件、构建产物与退出码。
-- **CI 建议**: 在 GitHub Actions / GitLab CI 上建立 matrix（linux/mac/windows）来运行构建/交叉编译测试，并在 `--release` 和 `--with-cgo` 下做抽样验证。
-
-**快速本地验证命令示例**
-```bash
-# 在临时目录验证新建与构建
-tmp=$(mktemp -d)
-cd "$tmp"
-gocar new testapp
-cd testapp
-gocar build --release
-file bin/linux/amd64/testapp || true
-gocar clean
-
-# 运行自定义命令（需在项目根有 .gocar.toml）
-gocar mycmd
-
-# 运行单元测试与静态检查
-go test ./... -v
-go vet ./...
-golangci-lint run || true
+```text
+myapp/
+├── cmd/myapp/main.go
+├── internal/
+├── go.mod
+├── README.md
+└── .gitignore
 ```
 
----
+- 不应生成额外的顶层源码布局目录。
+- 额外参数应返回清晰错误。
 
-已覆盖的核心命令与风险点如上。若要我继续：
-- 我可以把以上手动步骤逐步转换为可运行的集成测试脚本（使用 `os/exec` + 临时目录）。
-- 或者我可以现在为 `util` 下的若干函数编写具体单元测试并运行它们。
+## 构建与运行
 
-**其他需要测试的内容（补充）**
+- 新项目中 `gocar build` 应构建 `cmd/<appName>`。
+- 新项目中 `gocar run` 应运行 `cmd/<appName>`。
+- 构建产物应输出到 `bin/<profile>/<os>-<arch>/<appName>`。
 
-1. CLI 参数与子命令解析
-- 测试步骤: 枚举所有子命令（`new`、`build`、`run`、`clean`、`init`、`add`、`update`、`tidy`、`version`、自定义命令等），用常见正确/错误参数调用，验证退出码、错误消息、帮助输出一致性。
-- 潜在问题: 子命令冲突、长选项短选项混淆、`--` 参数分隔处理不当、全局 flag 与子命令 flag 冲突、未在 help 中列出所有选项。
+## 配置
 
-2. 配置解析与合并（`.gocar.toml`）
-- 测试步骤: 使用完整/缺失字段/错误类型（字符串应为数组、数字等）以及注入非法值的 TOML，加载并观察程序行为；测试目录名与 `project.name` 不一致时的优先级逻辑。
-- 潜在问题: 未校验字段类型导致 panic；未合并默认值或覆盖顺序错误；配置中相对路径没有被解析为绝对路径；空值回退逻辑错误。
+- `.gocar.toml` 不应包含模板或模式字段。
+- `[project].name` 可覆盖应用名。
+- `[build].entry` 可覆盖构建入口。
+- `[run].entry` 可覆盖运行入口。
+- `[profile.<name>]` 可定义构建 profile。
 
-3. 模板渲染与文件生成
-- 测试步骤: 新建项目模板包含占位符（如 `<appName>`），检查替换是否完整（文件内容、README、main.go 模板、`.gitignore` 等）；测试不同文件编码与换行（LF/CRLF）。
-- 潜在问题: 模板转义问题导致未替换占位符；二进制或不可打印字符注入；权限/所有者在生成后设置不正确。
+## 命令
 
-4. Git 相关操作
-- 测试步骤: 在有/无 git 的环境运行 `gocar new`（模板是否自动 `git init`、是否创建初始 commit）；在已经存在 remote 的仓库中运行新建命令，确认不会破坏已有仓库。
-- 潜在问题: 无 git 时未降级处理；`git` 命令失败未回滚已创建文件；敏感信息（如 remote URL）未被正确处理。
+- `gocar commands` 应列出内置命令和自定义命令。
+- `gocar doctor` 应检查 Go、Git、项目检测和配置合法性。
+- `gocar check` 应执行 `go fmt ./...`、`go vet ./...`、`go test ./...`。
 
-5. 子进程执行与信号转发（`util.exec`）
-- 测试步骤: 运行需要交互或长时间运行的命令（例如 `sleep`、`sh -c "read"`）、快速退出命令以及返回非零退出码的命令。测试发送 SIGINT/SIGTERM 给 `gocar`，确认子进程正确接收并退出。
-- 潜在问题: 信号未向子进程转发导致僵尸进程；未正确收集子进程退出码；子进程输出缓冲问题导致日志丢失。
+## 本地验证
 
-6. 并发与竞态（多个 gocar 实例/命令并发运行）
-- 测试步骤: 并发启动多个 `gocar build` 或 `gocar new` 指向同一目标目录，检测是否产生竞态或损坏文件。
-- 潜在问题: 目录/文件创建竞争导致损坏；锁机制缺失；临时文件命名冲突。
-
-7. 日志、错误信息与退出码一致性
-- 测试步骤: 故意触发错误（如无权限写入、无网络、构建失败），验证错误输出是否清晰并返回非零退出码供 CI 使用。
-- 潜在问题: 错误被吞掉或仅打印到日志；统一的日志/错误格式缺失导致自动化难以解析。
-
-8. 平台兼容性与路径处理
-- 测试步骤: 在 Windows/macOS/Linux（或使用 CI matrix）测试路径拼接、可执行文件扩展名（`.exe`）、权限模型及命令差异。
-- 潜在问题: 硬编码的路径分隔符；对 Windows 特性的假设； chmod/chown 在 Windows 上失败。
-
-9. Go Module 与版本兼容性
-- 测试步骤: 在使用不同 Go 版本（1.18, 1.20, 1.25 等）和不同 module 模式下运行命令，确保 `go` 命令调用兼容并处理 `GOMODCACHE`、`GOPROXY` 等环境差异。
-- 潜在问题: 针对某个 Go 版本实现特性，导致低版本不兼容；未处理 `go env` 异常输出。
-
-10. 仓库内示例/备份文件影响
-- 测试步骤: 确认 `backup/`、`bin/`、`debug/`、`release/` 等目录不会在 `gocar new` / `gocar build` 等操作中被误覆盖或纳入新项目模板；测试 `.gitignore` 是否包含不应该提交的构建产物。
-- 潜在问题: 在模板生成或清理时误删除仓库中现有示例或备份；仓库中已存在的可执行文件被误用为输出目标。
-
----
-
-我已将这些补充项追加到 `documents/review.md`。下一步我可以：
-- 把其中一项（例如 `util.exec` 的信号转发）实现为自动化集成测试并运行验证；或
-- 生成一个完整的 CI matrix 示例（GitHub Actions workflow）来跑这些自动化测试。请选择下一步或让我自动开始其中一项。
-
-
+```bash
+GOCACHE=/tmp/gocar-go-build go test ./...
+GOCACHE=/tmp/gocar-go-build go run ./cmd/gocar doctor
+```

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
 	"gocar/internal/project"
 )
@@ -13,7 +12,7 @@ type NewCommand struct{}
 // Run 执行 new 命令
 func (c *NewCommand) Run(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("missing project name (usage: gocar new <name> [--mode simple|project])")
+		return fmt.Errorf("missing project name (usage: gocar new <name>)")
 	}
 
 	// Check for help
@@ -29,33 +28,13 @@ func (c *NewCommand) Run(args []string) error {
 		return err
 	}
 
-	mode := "simple" // default mode
-
-	// Parse --mode flag
-	for i := 1; i < len(args); i++ {
-		switch args[i] {
-		case "--mode":
-			if i+1 < len(args) {
-				mode = args[i+1]
-				i++ // skip next arg
-			} else {
-				return fmt.Errorf("--mode requires a value")
-			}
-		default:
-			if strings.HasPrefix(args[i], "-") {
-				return fmt.Errorf("unknown option '%s' (run 'gocar new --help' for usage)", args[i])
-			}
-		}
+	if len(args) > 1 {
+		return fmt.Errorf("unknown option '%s' (run 'gocar new --help' for usage)", args[1])
 	}
 
-	// 检查是否是有效模式
-	if mode != "simple" && mode != "project" {
-		return fmt.Errorf("unknown mode '%s' (available: simple, project)", mode)
-	}
+	fmt.Printf("Creating new Go application: %s\n", appName)
 
-	fmt.Printf("Creating new %s project: %s\n", mode, appName)
-
-	creator := project.NewCreator(appName, mode)
+	creator := project.NewCreator(appName)
 	if err := creator.Create(); err != nil {
 		return fmt.Errorf("error creating project: %w", err)
 	}
@@ -74,15 +53,13 @@ func (c *NewCommand) Help() string {
 	helpText := `gocar new - Create a new Go project
 
 USAGE:
-    gocar new <name> [--mode simple|project]
+    gocar new <name>
 
-OPTIONS:
-    --mode <mode>    Project mode
-                     Available: 'simple' (default), 'project'
+DESCRIPTION:
+    Creates a standard Go application using cmd/<name>/main.go and internal/.
 
 EXAMPLES:
-    gocar new myapp                   Create a simple project
-    gocar new myapp --mode project    Create a project-mode project
+    gocar new myapp
 `
 	return helpText
 }

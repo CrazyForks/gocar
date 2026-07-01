@@ -33,7 +33,7 @@ chmod +x /usr/local/bin/gocar
 ```
 git clone https://github.com/uselibrary/gocar.git
 cd gocar
-CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o gocar main.go
+CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o gocar ./cmd/gocar
 sudo mv gocar /usr/local/bin/
 sudo chown root:root /usr/local/bin/gocar
 sudo chmod +x /usr/local/bin/gocar
@@ -42,7 +42,7 @@ sudo chmod +x /usr/local/bin/gocar
 ## Quick Start
 
 ```
-# Create a new project (simple mode)
+# Create a standard Go application
 gocar new myapp
 
 # Enter the project directory
@@ -54,6 +54,9 @@ gocar build
 # Run the project
 gocar run
 
+# Check the project
+gocar check
+
 # Clean build artifacts
 gocar clean
 ```
@@ -62,36 +65,16 @@ gocar clean
 
 ### Create a new project
 
-**`gocar new <appName> [--mode simple|project]`**
+**`gocar new <appName>`**
 
-Create a new Go project:
-
-- `gocar new <appName>` creates a simple-mode project (default)
-- `gocar new <appName> --mode project` creates a project-mode project
-
-Directory structure for **simple mode**:
-
-```
-<appName>/
-├── go.mod
-├── main.go
-├── README.md
-├── bin/
-├── .gitignore
-└── .git/
-```
-
-Directory structure for **project mode**:
+Create a standard Go application. `gocar new myapp` does not ask you to choose a template; it creates the default layout for most applications:
 
 ```
 <appName>/
 ├── cmd/
-│   └── server/
+│   └── <appName>/
 │       └── main.go
 ├── internal/
-├── pkg/
-├── test/
-├── bin/
 ├── go.mod
 ├── README.md
 ├── .gitignore
@@ -100,9 +83,7 @@ Directory structure for **project mode**:
 
 > Note: Created projects do not include `.gocar.toml` by default. Use `gocar init` to generate it manually.
 
-> Simple mode is suitable for small projects, scripts, CLI tools, etc. Project mode is suitable for larger projects, web services, microservices, etc., following the standard Go project layout.
-
-> `<appName>` is the project name, used as the directory name and the output executable name. `--mode` selects the project mode: `simple` (default) or `project`.
+> `<appName>` is the project name, used as the directory name, module name, and output executable name. The `bin/` directory is created automatically on the first `gocar build`.
 
 > Project name rules:
 >
@@ -118,6 +99,7 @@ Build the executable:
 
 - `gocar build` builds a Debug binary (default)
 - `gocar build --release` builds a Release binary (enables `CGO_ENABLED=0`, `ldflags="-s -w"`, and `-trimpath`)
+- `gocar build --profile <name>` builds with `[profile.<name>]` from `.gocar.toml`
 - `gocar build --target <os>/<arch>` cross-compiles for the specified platform
 - `gocar build --release --target <os>/<arch>` cross-compiles in Release mode for the specified platform
 - `gocar build --with-cgo` forces CGO to be enabled (sets `CGO_ENABLED=1`)
@@ -127,12 +109,12 @@ Build behavior:
 
 | Mode                    | Equivalent command                                           |
 | ----------------------- | ------------------------------------------------------------ |
-| debug (default)         | `go build -o bin/<os>/<arch>/<appName> ./main.go`            |
-| --release               | `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
-| --target                | `GOOS=<os> GOARCH=<arch> go build -o bin/<os>/<arch>/<appName> ./main.go` |
-| --release --target      | `CGO_ENABLED=0 GOOS=<os> GOARCH=<arch> go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
-| --with-cgo              | `CGO_ENABLED=1 go build -o bin/<os>/<arch>/<appName> ./main.go` |
-| --release --with-cgo    | `CGO_ENABLED=1 go build -ldflags="-s -w" -trimpath -o bin/<os>/<arch>/<appName> ./main.go` |
+| debug (default)         | `go build -o bin/debug/<os>-<arch>/<appName> <entry>` |
+| --release               | `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o bin/release/<os>-<arch>/<appName> <entry>` |
+| --target                | `GOOS=<os> GOARCH=<arch> go build -o bin/debug/<os>-<arch>/<appName> <entry>` |
+| --release --target      | `CGO_ENABLED=0 GOOS=<os> GOARCH=<arch> go build -ldflags="-s -w" -trimpath -o bin/release/<os>-<arch>/<appName> <entry>` |
+| --with-cgo              | `CGO_ENABLED=1 go build -o bin/debug/<os>-<arch>/<appName> <entry>` |
+| --release --with-cgo    | `CGO_ENABLED=1 go build -ldflags="-s -w" -trimpath -o bin/release/<os>-<arch>/<appName> <entry>` |
 
 Examples:
 
@@ -142,6 +124,9 @@ gocar build
 
 # Release build (enables CGO_ENABLED=0, ldflags="-s -w" and trimpath)
 gocar build --release
+
+# Build with a custom profile
+gocar build --profile ci
 
 # Cross-compile for a target OS/arch, e.g. Linux AMD64
 gocar build --target linux/amd64
@@ -185,6 +170,47 @@ Example:
 gocar clean
 # Cleaned build artifacts for '<appName>'
 ```
+
+**`gocar test [OPTIONS] [packages...]`**
+
+Run project tests. By default this is equivalent to `go test ./...`.
+
+Common options:
+- `--coverage` runs tests with coverage (`go test -cover`)
+- `--race` enables the race detector
+- `--bench <pattern>` runs matching benchmarks
+- Unrecognized test arguments are passed through to `go test`; you can also use `--` as an explicit separator
+
+Examples:
+
+```
+gocar test
+gocar test ./internal/...
+gocar test --coverage
+gocar test --bench .
+gocar test -run TestConfig
+gocar test -- -run TestConfig
+```
+
+**`gocar check [--no-test] [--race]`**
+
+Run project checks. By default this runs `go fmt ./...`, `go vet ./...`, and `go test ./...`.
+
+Examples:
+
+```
+gocar check
+gocar check --race
+gocar check --no-test
+```
+
+**`gocar commands`**
+
+List built-in commands and custom commands defined in `.gocar.toml`.
+
+**`gocar doctor`**
+
+Check Go/Git, project detection, and `.gocar.toml` validation.
 
 **`gocar help`**
 
@@ -253,10 +279,6 @@ gocar init
 # project configuration
 
 [project]
-# Project mode: "simple" (single file) or "project" (standard directory structure)
-# Auto-detected if empty
-mode = ""
-
 # Project name, uses directory name if empty
 name = ""
 
@@ -266,8 +288,8 @@ name = ""
 # Build configuration
 [build]
 # Build entry path (relative to project root)
-# simple mode defaults to ".", project mode defaults to "cmd/<appName>" (the project name)
-entry = "."
+# standard layout defaults to "cmd/<appName>"
+entry = "cmd/myapp"
 
 # Output directory
 output = "bin"
@@ -307,6 +329,12 @@ trimpath = true             # Remove path information
 cgo_enabled = false         # Disable CGO to generate static binary
 # race = false              # Race detection
 
+# Custom build profile
+# Usage: gocar build --profile ci
+# [profile.ci]
+# trimpath = true
+# race = true
+
 # Custom commands
 # Format: command_name = "shell command to execute"
 # Usage: gocar <command_name>
@@ -318,9 +346,6 @@ vet = "go vet ./..."
 # Code formatting
 fmt = "go fmt ./..."
 
-# Run tests
-test = "go test -v ./..."
-
 # lint = "golangci-lint run"
 # doc = "godoc -http=:6060"
 # proto = "protoc --go_out=. --go-grpc_out=. ./proto/*.proto"
@@ -330,7 +355,6 @@ test = "go test -v ./..."
 
 | Option | Description |
 |--------|-------------|
-| `[project].mode` | Specify project mode (`simple` or `project`), auto-detected if empty |
 | `[project].name` | Custom project name, uses directory name if empty |
 | `[project].version` | **Project version**, auto-injected via `-X main.version=<version>` at build time |
 | `[build].entry` | **Custom build entry path**, e.g., `cmd/myapp` instead of default `cmd/<appName>` (the project name) |
@@ -355,7 +379,7 @@ test = "go test -v ./..."
 
 ### Custom Commands
 
-After defining commands in the `[commands]` section of `.gocar.toml`, you can execute them directly:
+After defining commands in the `[commands]` section of `.gocar.toml`, you can execute them directly. `test` and `check` are built-in commands, so you usually do not need to define them yourself:
 
 ```bash
 # Code checking
@@ -364,11 +388,8 @@ gocar vet
 # Code formatting
 gocar fmt
 
-# Run tests
-gocar test
-
-# Pass additional arguments
-gocar test -run TestXxx
+# Custom lint
+gocar lint
 ```
 
 Command output is displayed in real-time to the terminal. You can define any custom commands, for example:
@@ -388,7 +409,7 @@ Custom commands can override most built-in commands, giving you full control ove
 | Command Type | Commands | Can Override |
 |--------------|----------|-------------|
 | Protected | `new`, `init` | ❌ No |
-| Project | `build`, `run`, `clean`, `add`, `update`, `tidy` | ✅ Yes |
+| Project | `build`, `run`, `clean`, `add`, `update`, `tidy`, `test`, `check`, `commands`, `doctor` | ✅ Yes |
 
 > **Protected commands** (`new`, `init`) cannot be overridden because `new` runs before project creation (no config file exists yet), and `init` generates the config file itself.
 

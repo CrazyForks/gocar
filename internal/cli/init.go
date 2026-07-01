@@ -21,7 +21,7 @@ func (c *InitCommand) Run(args []string) error {
 	}
 
 	// 检测项目
-	projectRoot, appName, projectMode, err := project.DetectProject()
+	projectRoot, appName, _, err := project.DetectProject()
 	if err != nil {
 		return fmt.Errorf("%v; please run this command in a Go project directory (where go.mod exists)", err)
 	}
@@ -34,16 +34,16 @@ func (c *InitCommand) Run(args []string) error {
 	}
 
 	// 创建配置文件
-	if err := config.Save(projectRoot, appName, projectMode); err != nil {
+	if err := config.Save(projectRoot, appName); err != nil {
 		return fmt.Errorf("error creating %s: %w", config.ConfigFileName, err)
 	}
 
 	fmt.Printf("Created %s in %s\n", config.ConfigFileName, projectRoot)
 	fmt.Println("\nYou can now customize:")
-	fmt.Println("  - [project] section: project mode and name")
+	fmt.Println("  - [project] section: project name")
 	fmt.Println("  - [build] section: build entry path and options")
 	fmt.Println("  - [run] section: run entry path and default args")
-	fmt.Println("  - [commands] section: custom commands like vet, fmt, test")
+	fmt.Println("  - [commands] section: custom commands like vet, fmt, lint")
 
 	return nil
 }

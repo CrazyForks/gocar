@@ -47,6 +47,10 @@ func NewApp() *App {
 	app.commands["add"] = &AddCommand{}
 	app.commands["update"] = &UpdateCommand{}
 	app.commands["tidy"] = &TidyCommand{}
+	app.commands["test"] = &TestCommand{}
+	app.commands["check"] = &CheckCommand{}
+	app.commands["commands"] = &CommandsCommand{}
+	app.commands["doctor"] = &DoctorCommand{}
 	app.commands["init"] = &InitCommand{}
 
 	return app
@@ -145,7 +149,7 @@ USAGE:
     gocar <COMMAND> [OPTIONS]
 
 COMMANDS:
-    new <name> [--mode simple|project]     Create a new Go project
+    new <name>                             Create a standard Go application
     init                                   Initialize .gocar.toml in current project
     build [--release]                      Build the project
     run [args...]                          Run the project
@@ -153,23 +157,48 @@ COMMANDS:
     add <package>...                       Add dependencies to go.mod
     update [package]...                    Update dependencies
     tidy                                   Tidy up go.mod and go.sum
+    test [OPTIONS] [packages...]           Run tests
+    check [OPTIONS]                        Run fmt, vet, and tests
+    commands                               List built-in and custom commands
+    doctor                                 Check project and toolchain setup
     help                                   Print this help message
     version                                Print version info
 
 CUSTOM COMMANDS:
     Define custom commands in .gocar.toml [commands] section.
     Custom commands can override built-in commands (except: new, init).
-    Example: gocar vet, gocar fmt, gocar test
+    Example: gocar vet, gocar fmt, gocar lint
 
 EXAMPLES:
-    gocar new myapp                        Create a simple project
-    gocar new myapp --mode project         Create a project-mode project
+    gocar new myapp                        Create a standard Go application
     gocar init                             Create .gocar.toml config file
     gocar build                            Build in debug mode
     gocar build --release                  Build in release mode
     gocar run                              Build and run the project
     gocar add github.com/gin-gonic/gin     Add a dependency
+    gocar test --coverage                  Run tests with coverage
+    gocar check                            Run fmt, vet, and tests
+    gocar doctor                           Check project health
     gocar vet                              Run custom vet command
 `
 	fmt.Print(help)
+}
+
+func builtInCommandNames() []string {
+	return []string{
+		"new",
+		"init",
+		"build",
+		"run",
+		"clean",
+		"add",
+		"update",
+		"tidy",
+		"test",
+		"check",
+		"commands",
+		"doctor",
+		"help",
+		"version",
+	}
 }

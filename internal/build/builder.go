@@ -86,7 +86,11 @@ func (b *Builder) buildCommand(outputPath string) *exec.Cmd {
 	// 获取当前模式的 profile 配置
 	var profile *config.ProfileConfig
 	if b.gocarConfig != nil {
-		profile = b.gocarConfig.GetProfile(b.config.Release)
+		var ok bool
+		profile, _, ok = b.gocarConfig.GetProfileForBuild(b.config.Profile, b.config.Release)
+		if !ok {
+			profile = nil
+		}
 	}
 
 	// 构建 ldflags
@@ -149,8 +153,8 @@ func (b *Builder) buildCommand(outputPath string) *exec.Cmd {
 	// 从配置获取构建入口
 	var entry string
 	if b.gocarConfig != nil {
-		entry = b.gocarConfig.GetBuildEntry(b.projectMode)
-	} else if b.projectMode == "project" {
+		entry = b.gocarConfig.GetBuildEntryForApp(b.appName)
+	} else if b.projectMode == "standard" {
 		entry = "./cmd/" + b.appName
 	} else {
 		entry = "."
@@ -179,7 +183,11 @@ func (b *Builder) buildEnv() []string {
 	// 获取当前模式的 profile 配置
 	var profile *config.ProfileConfig
 	if b.gocarConfig != nil {
-		profile = b.gocarConfig.GetProfile(b.config.Release)
+		var ok bool
+		profile, _, ok = b.gocarConfig.GetProfileForBuild(b.config.Profile, b.config.Release)
+		if !ok {
+			profile = nil
+		}
 	}
 
 	// 命令行 --with-cgo 优先级最高
@@ -206,7 +214,9 @@ func (b *Builder) buildEnv() []string {
 // PrintBuildInfo 打印构建信息
 func (b *Builder) PrintBuildInfo() {
 	mode := "debug"
-	if b.config.Release {
+	if b.config.Profile != "" {
+		mode = b.config.Profile
+	} else if b.config.Release {
 		mode = "release"
 	}
 

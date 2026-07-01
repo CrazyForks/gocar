@@ -10,7 +10,7 @@ import (
 type Info struct {
 	Root string // 项目根目录
 	Name string // 项目名称
-	Mode string // 项目模式: "simple" or "project"
+	Mode string // 项目布局: "standard"
 }
 
 // Detector 项目检测器
@@ -41,10 +41,10 @@ func (d *Detector) Detect() (*Info, error) {
 		root = parent
 	}
 
-	// 检测项目模式
+	// 检测项目布局
 	mode := d.detectMode(root)
 	if mode == "" {
-		return nil, fmt.Errorf("cannot detect project mode: no main.go found and cmd/<appName> or cmd/*/main.go don't exist")
+		return nil, fmt.Errorf("cannot detect project layout: cmd/*/main.go does not exist")
 	}
 
 	return &Info{
@@ -54,26 +54,19 @@ func (d *Detector) Detect() (*Info, error) {
 	}, nil
 }
 
-// detectMode 检测项目模式
+// detectMode 检测项目布局
 func (d *Detector) detectMode(root string) string {
-	// Check for project mode:
-	// 1. legacy: cmd/<appName> directory exists
-	// 2. any cmd/*/main.go exists (common project layout)
+	// Standard mode: any cmd/*/main.go exists.
 	cmdServerDir := filepath.Join(root, "cmd", "server")
 	if stat, err := os.Stat(cmdServerDir); err == nil && stat.IsDir() {
-		return "project"
+		return ModeStandard
 	}
 
 	// check for any cmd/*/main.go
 	cmdGlob := filepath.Join(root, "cmd", "*", "main.go")
 	matches, err := filepath.Glob(cmdGlob)
 	if err == nil && len(matches) > 0 {
-		return "project"
-	}
-
-	// Simple mode: main.go in root
-	if _, err := os.Stat(filepath.Join(root, "main.go")); err == nil {
-		return "simple"
+		return ModeStandard
 	}
 
 	return ""

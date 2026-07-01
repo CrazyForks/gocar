@@ -15,6 +15,7 @@ type BuildCommand struct{}
 func (c *BuildCommand) Run(args []string) error {
 	buildConfig := build.NewConfig()
 	target := ""
+	profile := ""
 
 	// Parse arguments
 	for i := 0; i < len(args); i++ {
@@ -25,8 +26,16 @@ func (c *BuildCommand) Run(args []string) error {
 			return nil
 		case "--release":
 			buildConfig.Release = true
+			buildConfig.Profile = "release"
 		case "--with-cgo":
 			buildConfig.WithCGO = true
+		case "--profile":
+			if i+1 < len(args) {
+				profile = args[i+1]
+				i++ // skip next arg
+			} else {
+				return fmt.Errorf("--profile requires a value")
+			}
 		case "--target":
 			if i+1 < len(args) {
 				target = args[i+1]
@@ -52,11 +61,18 @@ func (c *BuildCommand) Run(args []string) error {
 		cfg = config.DefaultConfig()
 	}
 
-	// Apply config overrides
-	if cfg.Project.Mode != "" {
-		projectMode = cfg.Project.Mode
-	}
 	appName = cfg.GetProjectName(appName)
+
+	if err := cfg.Validate(projectRoot); err != nil {
+		return fmt.Errorf("invalid %s: %w", config.ConfigFileName, err)
+	}
+	if profile != "" {
+		if _, _, ok := cfg.GetProfileForBuild(profile, false); !ok {
+			return fmt.Errorf("unknown profile %q (available: %v)", profile, cfg.ListProfiles())
+		}
+		buildConfig.Profile = profile
+		buildConfig.Release = profile == "release"
+	}
 
 	// Parse target if specified
 	if target != "" {
@@ -90,6 +106,7 @@ USAGE:
 
 OPTIONS:
     --release              Build in release mode (optimized binary)
+    --profile <name>       Build with a named profile from .gocar.toml
     --target <os>/<arch>   Cross-compile for target platform
     --with-cgo             Force enable CGO (sets CGO_ENABLED=1)
     --help                 Show this help message
@@ -97,6 +114,7 @@ OPTIONS:
 EXAMPLES:
     gocar build                                  Build for current platform (debug)
     gocar build --release                        Build for current platform (release)
+    gocar build --profile ci                     Build with [profile.ci]
     gocar build --target linux/amd64             Cross-compile for Linux AMD64
     gocar build --release --target linux/arm64   Cross-compile for Linux ARM (release)
     gocar build --with-cgo                       Build with CGO enabled
