@@ -34,7 +34,8 @@ myapp/
 
 - `gocar commands` 应列出内置命令和自定义命令。
 - `gocar doctor` 应检查 Go、Git、项目检测和配置合法性。
-- `gocar check` 应执行 `go fmt ./...`、`go vet ./...`、`go test ./...`。
+- `gocar check` 应执行 `go vet ./...`、`go test ./...`，不应修改源码。
+- `gocar fmt` 应显式执行格式化。
 
 ## 本地验证
 

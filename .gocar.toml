@@ -7,7 +7,7 @@
 name = "gocar"
 
 # 项目版本号
-version = "0.2.1"
+version = "0.3.0"
 
 # 构建配置
 [build]
@@ -65,15 +65,9 @@ cgo_enabled = false         # 禁用 CGO 以生成静态二进制
 # 使用: gocar <命令名>
 # 命令会在项目根目录下执行
 #
-# 自定义命令可以覆盖以下内置命令: build, run, clean, add, update, tidy, test, check, commands, doctor
+# 自定义命令可以覆盖以下内置命令: build, run, clean, fmt, vet, add, update, tidy, test, check, commands, doctor
 # 保护命令 (new, init) 不可被覆盖
 [commands]
-# 代码检查
-vet = "go vet ./..."
-
-# 代码格式化
-fmt = "go fmt ./..."
-
 # lint = "golangci-lint run"
 clippy = "/home/imes/go/bin/golangci-lint run"
 # doc = "godoc -http=:6060"

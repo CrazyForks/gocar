@@ -83,6 +83,8 @@ Create a standard Go application. `gocar new myapp` does not ask you to choose a
 
 > Note: Created projects do not include `.gocar.toml` by default. Use `gocar init` to generate it manually.
 
+> The `.gocar.toml` in this repository is only gocar's own development config; new projects do not get this file by default.
+
 > `<appName>` is the project name, used as the directory name, module name, and output executable name. The `bin/` directory is created automatically on the first `gocar build`.
 
 > Project name rules:
@@ -194,7 +196,7 @@ gocar test -- -run TestConfig
 
 **`gocar check [--no-test] [--race]`**
 
-Run project checks. By default this runs `go fmt ./...`, `go vet ./...`, and `go test ./...`.
+Run project checks. By default this runs `go vet ./...` and `go test ./...`. It does not modify source files; run `gocar fmt` explicitly when you want formatting.
 
 Examples:
 
@@ -203,6 +205,14 @@ gocar check
 gocar check --race
 gocar check --no-test
 ```
+
+**`gocar fmt [packages...]`**
+
+Format Go code. By default this is equivalent to `go fmt ./...`. This command may modify files.
+
+**`gocar vet [packages...]`**
+
+Run `go vet`. By default this is equivalent to `go vet ./...`.
 
 **`gocar commands`**
 
@@ -340,12 +350,6 @@ cgo_enabled = false         # Disable CGO to generate static binary
 # Usage: gocar <command_name>
 # Commands are executed in the project root directory
 [commands]
-# Code checking
-vet = "go vet ./..."
-
-# Code formatting
-fmt = "go fmt ./..."
-
 # lint = "golangci-lint run"
 # doc = "godoc -http=:6060"
 # proto = "protoc --go_out=. --go-grpc_out=. ./proto/*.proto"
@@ -379,15 +383,9 @@ fmt = "go fmt ./..."
 
 ### Custom Commands
 
-After defining commands in the `[commands]` section of `.gocar.toml`, you can execute them directly. `test` and `check` are built-in commands, so you usually do not need to define them yourself:
+After defining commands in the `[commands]` section of `.gocar.toml`, you can execute them directly. `fmt`, `vet`, `test`, and `check` are built-in commands, so you usually do not need to define them yourself:
 
 ```bash
-# Code checking
-gocar vet
-
-# Code formatting
-gocar fmt
-
 # Custom lint
 gocar lint
 ```
@@ -409,7 +407,7 @@ Custom commands can override most built-in commands, giving you full control ove
 | Command Type | Commands | Can Override |
 |--------------|----------|-------------|
 | Protected | `new`, `init` | ❌ No |
-| Project | `build`, `run`, `clean`, `add`, `update`, `tidy`, `test`, `check`, `commands`, `doctor` | ✅ Yes |
+| Project | `build`, `run`, `clean`, `fmt`, `vet`, `add`, `update`, `tidy`, `test`, `check`, `commands`, `doctor` | ✅ Yes |
 
 > **Protected commands** (`new`, `init`) cannot be overridden because `new` runs before project creation (no config file exists yet), and `init` generates the config file itself.
 

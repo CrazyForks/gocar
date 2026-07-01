@@ -57,12 +57,6 @@ func (d *Detector) Detect() (*Info, error) {
 // detectMode 检测项目布局
 func (d *Detector) detectMode(root string) string {
 	// Standard mode: any cmd/*/main.go exists.
-	cmdServerDir := filepath.Join(root, "cmd", "server")
-	if stat, err := os.Stat(cmdServerDir); err == nil && stat.IsDir() {
-		return ModeStandard
-	}
-
-	// check for any cmd/*/main.go
 	cmdGlob := filepath.Join(root, "cmd", "*", "main.go")
 	matches, err := filepath.Glob(cmdGlob)
 	if err == nil && len(matches) > 0 {

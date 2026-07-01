@@ -83,6 +83,8 @@ gocar clean
 
 > 注意：创建的项目默认不包含 `.gocar.toml`，可通过 `gocar init` 手动生成。
 
+> 本仓库根目录的 `.gocar.toml` 只是 gocar 自身的开发配置，不代表新项目会默认生成该文件。
+
 > `<appName>` 为项目名称，同时作为目录名、模块名和输出的可执行文件名。构建产物目录 `bin/` 会在首次 `gocar build` 时自动创建。
 
 > 项目名规则：
@@ -190,7 +192,7 @@ gocar test -- -run TestConfig
 
 **`gocar check [--no-test] [--race]`**
 
-运行项目检查，默认依次执行 `go fmt ./...`、`go vet ./...`、`go test ./...`。
+运行项目检查，默认依次执行 `go vet ./...`、`go test ./...`。该命令不会修改源码；需要格式化时请显式运行 `gocar fmt`。
 
 示例：
 ```bash
@@ -198,6 +200,14 @@ gocar check
 gocar check --race
 gocar check --no-test
 ```
+
+**`gocar fmt [packages...]`**
+
+格式化 Go 代码，默认等价于 `go fmt ./...`。该命令可能修改文件。
+
+**`gocar vet [packages...]`**
+
+运行 `go vet`，默认等价于 `go vet ./...`。
 
 **`gocar commands`**
 
@@ -333,12 +343,6 @@ cgo_enabled = false         # 禁用 CGO 以生成静态二进制
 # 使用: gocar <命令名>
 # 命令会在项目根目录下执行
 [commands]
-# 代码检查
-vet = "go vet ./..."
-
-# 代码格式化
-fmt = "go fmt ./..."
-
 # lint = "golangci-lint run"
 # doc = "godoc -http=:6060"
 # proto = "protoc --go_out=. --go-grpc_out=. ./proto/*.proto"
@@ -372,15 +376,9 @@ fmt = "go fmt ./..."
 
 ### 自定义命令
 
-在 `.gocar.toml` 的 `[commands]` 部分定义命令后，可以直接执行。`test` 和 `check` 已是内置命令，通常不需要再自定义：
+在 `.gocar.toml` 的 `[commands]` 部分定义命令后，可以直接执行。`fmt`、`vet`、`test` 和 `check` 已是内置命令，通常不需要再自定义：
 
 ```bash
-# 代码检查
-gocar vet
-
-# 代码格式化
-gocar fmt
-
 # 自定义 lint
 gocar lint
 ```
@@ -402,7 +400,7 @@ dev = "air"  # 热重载
 | 命令类型 | 命令 | 可被覆盖 |
 |---------|------|----------|
 | 保护命令 | `new`, `init` | ❌ 不可覆盖 |
-| 项目命令 | `build`, `run`, `clean`, `add`, `update`, `tidy`, `test`, `check`, `commands`, `doctor` | ✅ 可覆盖 |
+| 项目命令 | `build`, `run`, `clean`, `fmt`, `vet`, `add`, `update`, `tidy`, `test`, `check`, `commands`, `doctor` | ✅ 可覆盖 |
 
 > **保护命令**（`new`、`init`）不能被覆盖，因为 `new` 在项目创建前执行（此时还没有配置文件），`init` 用于生成配置文件本身。
 

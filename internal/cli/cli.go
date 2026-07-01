@@ -9,7 +9,7 @@ import (
 )
 
 // Version 版本号
-var Version = "0.2.1"
+var Version = "0.3.0"
 
 // ErrCommandNotFound 命令未找到错误
 var ErrCommandNotFound = errors.New("command not found")
@@ -44,6 +44,8 @@ func NewApp() *App {
 	app.commands["build"] = &BuildCommand{}
 	app.commands["run"] = &RunCommand{}
 	app.commands["clean"] = &CleanCommand{}
+	app.commands["fmt"] = &FmtCommand{}
+	app.commands["vet"] = &VetCommand{}
 	app.commands["add"] = &AddCommand{}
 	app.commands["update"] = &UpdateCommand{}
 	app.commands["tidy"] = &TidyCommand{}
@@ -143,62 +145,18 @@ func (a *App) tryRunCustomCommand(cmdName string, args []string) error {
 
 // printHelp 打印帮助信息
 func printHelp() {
-	help := `gocar - A cargo-like tool for Go projects
+	fmt.Printf(`gocar - A cargo-like tool for Go projects
 
 USAGE:
     gocar <COMMAND> [OPTIONS]
 
 COMMANDS:
-    new <name>                             Create a standard Go application
-    init                                   Initialize .gocar.toml in current project
-    build [--release]                      Build the project
-    run [args...]                          Run the project
-    clean                                  Clean build artifacts
-    add <package>...                       Add dependencies to go.mod
-    update [package]...                    Update dependencies
-    tidy                                   Tidy up go.mod and go.sum
-    test [OPTIONS] [packages...]           Run tests
-    check [OPTIONS]                        Run fmt, vet, and tests
-    commands                               List built-in and custom commands
-    doctor                                 Check project and toolchain setup
-    help                                   Print this help message
-    version                                Print version info
-
+%s
 CUSTOM COMMANDS:
     Define custom commands in .gocar.toml [commands] section.
     Custom commands can override built-in commands (except: new, init).
-    Example: gocar vet, gocar fmt, gocar lint
+    Example: gocar lint, gocar doc
 
 EXAMPLES:
-    gocar new myapp                        Create a standard Go application
-    gocar init                             Create .gocar.toml config file
-    gocar build                            Build in debug mode
-    gocar build --release                  Build in release mode
-    gocar run                              Build and run the project
-    gocar add github.com/gin-gonic/gin     Add a dependency
-    gocar test --coverage                  Run tests with coverage
-    gocar check                            Run fmt, vet, and tests
-    gocar doctor                           Check project health
-    gocar vet                              Run custom vet command
-`
-	fmt.Print(help)
-}
-
-func builtInCommandNames() []string {
-	return []string{
-		"new",
-		"init",
-		"build",
-		"run",
-		"clean",
-		"add",
-		"update",
-		"tidy",
-		"test",
-		"check",
-		"commands",
-		"doctor",
-		"help",
-		"version",
-	}
+%s`, formatBuiltInCommands(), formatExamples())
 }

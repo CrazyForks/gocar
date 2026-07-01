@@ -25,7 +25,8 @@ func (c *CommandsCommand) Run(args []string) error {
 
 	fmt.Println("Built-in commands:")
 	for _, name := range builtInCommandNames() {
-		fmt.Printf("  %s\n", name)
+		info, _ := builtInCommandInfo(name)
+		fmt.Printf("  %-12s %s\n", name, info.Description)
 	}
 
 	projectRoot, _, _, err := project.DetectProject()

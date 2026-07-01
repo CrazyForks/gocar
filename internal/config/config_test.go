@@ -6,17 +6,13 @@ import (
 	"testing"
 )
 
-func TestDefaultConfigUsesBuiltInTestAndCheck(t *testing.T) {
+func TestDefaultConfigDoesNotOverrideBuiltIns(t *testing.T) {
 	cfg := DefaultConfig()
 
-	if _, ok := cfg.Commands["test"]; ok {
-		t.Fatal("default custom commands should not override built-in test")
-	}
-	if _, ok := cfg.Commands["check"]; ok {
-		t.Fatal("default custom commands should not override built-in check")
-	}
-	if cfg.Commands["vet"] == "" || cfg.Commands["fmt"] == "" {
-		t.Fatal("expected default vet and fmt custom commands")
+	for _, name := range []string{"fmt", "vet", "test", "check"} {
+		if _, ok := cfg.Commands[name]; ok {
+			t.Fatalf("default custom commands should not override built-in %s", name)
+		}
 	}
 }
 
@@ -77,7 +73,7 @@ lint = "golangci-lint run"
 	if !ok || !ci.Race {
 		t.Fatalf("custom ci profile not merged: %#v", cfg.Profile.Profiles)
 	}
-	if cfg.Commands["lint"] == "" || cfg.Commands["vet"] == "" {
+	if cfg.Commands["lint"] == "" {
 		t.Fatalf("commands not merged: %#v", cfg.Commands)
 	}
 }

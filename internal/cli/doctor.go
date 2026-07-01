@@ -2,7 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"go/parser"
+	"go/token"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"gocar/internal/config"
 	"gocar/internal/project"
@@ -28,6 +33,7 @@ func (c *DoctorCommand) Run(args []string) error {
 	ok := true
 	ok = printToolCheck("go", true) && ok
 	ok = printToolCheck("git", false) && ok
+	ok = printGoEnvironment() && ok
 
 	projectRoot, appName, projectMode, err := project.DetectProject()
 	if err != nil {
@@ -45,8 +51,24 @@ func (c *DoctorCommand) Run(args []string) error {
 			fmt.Printf("ERR %s: %v\n", config.ConfigFileName, err)
 			ok = false
 		} else {
-			fmt.Printf("OK  %s: valid\n", config.ConfigFileName)
+			if config.Exists(projectRoot) {
+				fmt.Printf("OK  %s: valid\n", config.ConfigFileName)
+			} else {
+				fmt.Printf("OK  %s: not found, using defaults\n", config.ConfigFileName)
+			}
 			fmt.Printf("  profiles: %v\n", cfg.ListProfiles())
+			if !printCommandOverrideWarnings(cfg) {
+				ok = false
+			}
+			if !printEntryCheck(projectRoot, "build.entry", cfg.GetBuildEntryForApp(appName), true) {
+				ok = false
+			}
+			runEntry := cfg.GetRunEntryForApp(appName)
+			if runEntry != cfg.GetBuildEntryForApp(appName) {
+				if !printEntryCheck(projectRoot, "run.entry", runEntry, true) {
+					ok = false
+				}
+			}
 		}
 	}
 
@@ -55,6 +77,89 @@ func (c *DoctorCommand) Run(args []string) error {
 	}
 	fmt.Println("All checks passed")
 	return nil
+}
+
+func printGoEnvironment() bool {
+	versionCmd := exec.Command("go", "version")
+	versionOutput, err := versionCmd.Output()
+	if err != nil {
+		fmt.Printf("ERR go version: %v\n", err)
+		return false
+	}
+	fmt.Printf("OK  go.version: %s\n", strings.TrimSpace(string(versionOutput)))
+
+	envCmd := exec.Command("go", "env", "GOPROXY", "GOMODCACHE", "CGO_ENABLED")
+	envOutput, err := envCmd.Output()
+	if err != nil {
+		fmt.Printf("ERR go env: %v\n", err)
+		return false
+	}
+	lines := strings.Split(strings.TrimSpace(string(envOutput)), "\n")
+	keys := []string{"GOPROXY", "GOMODCACHE", "CGO_ENABLED"}
+	for i, key := range keys {
+		value := ""
+		if i < len(lines) {
+			value = lines[i]
+		}
+		fmt.Printf("OK  go.env.%s: %s\n", key, value)
+	}
+	return true
+}
+
+func printCommandOverrideWarnings(cfg *config.GocarConfig) bool {
+	for name := range cfg.Commands {
+		if isBuiltInCommandName(name) && !isProtectedCommand(name) {
+			fmt.Printf("WARN command %q overrides built-in command\n", name)
+		}
+	}
+	return true
+}
+
+func printEntryCheck(projectRoot, label, entry string, requireMain bool) bool {
+	path := entry
+	if path == "" {
+		fmt.Printf("ERR %s: empty\n", label)
+		return false
+	}
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(projectRoot, path)
+	}
+	if _, err := os.Stat(path); err != nil {
+		fmt.Printf("ERR %s: %s does not exist\n", label, entry)
+		return false
+	}
+	fmt.Printf("OK  %s: %s\n", label, entry)
+	if requireMain {
+		if !entryHasMainPackage(path) {
+			fmt.Printf("ERR %s: %s is not a main package\n", label, entry)
+			return false
+		}
+		fmt.Printf("OK  %s.package: main\n", label)
+	}
+	return true
+}
+
+func entryHasMainPackage(path string) bool {
+	stat, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	fset := token.NewFileSet()
+	if !stat.IsDir() {
+		file, err := parser.ParseFile(fset, path, nil, parser.PackageClauseOnly)
+		return err == nil && file.Name != nil && file.Name.Name == "main"
+	}
+
+	pkgs, err := parser.ParseDir(fset, path, func(info os.FileInfo) bool {
+		name := info.Name()
+		return !info.IsDir() && strings.HasSuffix(name, ".go") && !strings.HasSuffix(name, "_test.go")
+	}, parser.PackageClauseOnly)
+	if err != nil {
+		return false
+	}
+	_, ok := pkgs["main"]
+	return ok
 }
 
 func printToolCheck(name string, required bool) bool {

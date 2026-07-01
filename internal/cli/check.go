@@ -40,7 +40,6 @@ func (c *CheckCommand) Run(args []string) error {
 		name string
 		args []string
 	}{
-		{name: "fmt", args: []string{"fmt", "./..."}},
 		{name: "vet", args: []string{"vet", "./..."}},
 	}
 
@@ -68,7 +67,7 @@ func (c *CheckCommand) Run(args []string) error {
 
 // Help 返回帮助信息
 func (c *CheckCommand) Help() string {
-	return `gocar check - Run fmt, vet, and tests
+	return `gocar check - Run vet and tests
 
 USAGE:
     gocar check [OPTIONS]
@@ -79,8 +78,8 @@ OPTIONS:
     --help         Show this help message
 
 EXAMPLES:
-    gocar check            Run go fmt, go vet, and go test
+    gocar check            Run go vet and go test
     gocar check --race     Run checks and race-enabled tests
-    gocar check --no-test  Run only go fmt and go vet
+    gocar check --no-test  Run only go vet
 `
 }
